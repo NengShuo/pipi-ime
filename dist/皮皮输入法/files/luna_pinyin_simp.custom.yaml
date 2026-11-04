@@ -1,0 +1,46 @@
+# 皮皮输入法 · 验证补丁
+# 作用：在简体拼音方案上挂 Lua 组件，并让英文模式的输入走真正的拼音引擎
+# 恢复方法：删掉本文件，重新部署即可
+
+patch:
+  # 托盘图标：故意用全透明的 ico
+  #
+  # 为什么：Windows 上会有两个「输入法」图标 ——
+  #   ① 小狼毫自己画的托盘图标（受这里控制）
+  #   ② 系统的输入法指示器（受 HKLM 注册表 Description/IconFile 控制）
+  # ① 想关掉应该用 "style/display_tray_icon": false，但在 Win10 22H2 实测无效
+  # （Weasel 启动时先按默认值把图标建出来，之后读到 false 也不会移除）。
+  # 所以改成给 ① 一个全透明图标：它仍然占位，但看不见。
+  # ② 已经由安装脚本改名成「皮皮输入法」并换成 pipi-p.ico。
+  # 最终效果：右下角看起来只有一个皮皮 P。
+  "schema/icon": "pipi-blank.ico"
+  "schema/ascii_icon": "pipi-blank.ico"
+
+  # 前置处理器：抢在 ascii_composer 之前，把英文模式的字母截回输入缓冲
+  "engine/processors/@before 0": "lua_processor@pipi_ascii"
+
+  # 关键改动：摘掉 ascii_segmentor
+  # 它会把英文模式的输入打上 raw 标签，导致拼音引擎拒绝翻译
+  # 去掉后，同一串字母会被 abc_segmentor 当作拼音处理，从而产出真正的中文候选
+  "engine/segmentors":
+    - matcher
+    - abc_segmentor
+    - punct_segmentor
+    - fallback_segmentor
+
+  # 翻译器：暂时留空占位，确认引擎接管后再按需启用
+  "engine/translators/+":
+    - "lua_translator@pipi_test"
+
+  # 过滤器：
+  #   像拼音 → 第 1 位中文、第 2 位「原样拼音」（可按数字键选中），后面才是其他中文
+  #   像英文 → 第 1 位英文原文，中文候选跟在后面
+  "engine/filters/+":
+    - "lua_filter@pipi_filter"
+
+  # 候选右侧的拼音注释已关闭。
+  # 那个第二列只是 decoration，不能单独选中，等于占位置没用；
+  # 真正有用的「原样拼音」由上面的 filter 作为独立候选插在第 2 位。
+  # 想重新打开就加回下面两行（键名在 translator 命名空间，不是 speller）：
+  #   "translator/spelling_hints": 24
+  #   "translator/always_show_comments": true

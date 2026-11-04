@@ -1,0 +1,64 @@
+# 皮皮输入法 · 外观配置
+# 只改外观，不影响输入逻辑（逻辑在 luna_pinyin_simp.custom.yaml 和 rime.lua）
+#
+# 注意：这个文件不会被自动编译，改完要跑 tools/apply_style.py 合并进 build/weasel.yaml
+#
+# 关键：Weasel 0.17 真正的布局参数在 style/layout/ 下面，顶层 style/xxx 只是兜底。
+# 只写顶层的话会被 layout 里的默认值（border_width: 3、margin 12 等）压住，
+# 之前「白底黑粗框」就是这么来的。
+
+patch:
+  # ── 托盘角标 ────────────────────────────────────────────
+  # 真正的图标入口在 schema 里（schema/icon、schema/ascii_icon，见 luna_pinyin_simp.custom.yaml），
+  # 这里只控制「显示 / 不显示托盘图标」。
+  "style/display_tray_icon": false   # 关掉小狼毫自带托盘，只留系统输入法指示器（它已被改名成皮皮）
+
+  # ── 候选窗外观 ──────────────────────────────────────────
+  "style/color_scheme": "pipi"
+  # 竖排一列：一行一个候选，序号 + 文字
+  "style/horizontal": false
+  "style/inline_preedit": false
+  "style/font_face": "Microsoft YaHei"
+  "style/label_font_face": "Microsoft YaHei"
+  "style/font_point": 12
+  "style/label_font_point": 11
+  "style/label_format": "%s"
+
+  # ── 布局（真正生效的一层）────────────────────────────────
+  # 外框：不要边框，靠投影分出层次，避免「黑框」观感
+  "style/layout/border_width": 0
+  "style/layout/border_height": 0
+  "style/layout/margin_x": 14
+  "style/layout/margin_y": 12
+  # 候选之间的竖向间距
+  "style/layout/candidate_spacing": 8
+  "style/layout/spacing": 8
+  # 高亮块：比文字大一圈，形成「胶囊」
+  "style/layout/hilite_spacing": 4
+  "style/layout/hilite_padding": 6
+  "style/layout/round_corner": 8
+  "style/layout/corner_radius": 8
+  # 投影：往下偏 3px、柔和
+  "style/layout/shadow_radius": 8
+  "style/layout/shadow_offset_x": 0
+  "style/layout/shadow_offset_y": 3
+  "style/layout/min_width": 120
+  "style/layout/align_type": "center"
+
+  # ── 自定义皮肤 ──────────────────────────────────────────
+  # 颜色格式是 0xAABBGGRR，不是 RGB！写反了会出现「想要米黄结果变浅蓝」这种鬼打墙。
+  # 每个值后面标了真实的 RGB，方便对照。
+  "preset_color_schemes/pipi":
+    name: "皮皮／Pipi"
+    author: "皮皮输入法"
+    back_color: 0xFFFCFCFC              # #FCFCFC 近白（纯白在暗色壁纸上会刺眼）
+    border_color: 0xFFE9E9E9            # #E9E9E9 浅灰描边（配合 border_width 0，基本看不到）
+    shadow_color: 0x1E000000            # 黑色 12% 投影
+    text_color: 0xFF2B2B2B              # #2B2B2B 输入框文字
+    candidate_text_color: 0xFF2B2B2B    # #2B2B2B 候选文字
+    comment_text_color: 0xFF8A8A8A      # #8A8A8A 注释（当前不用第二列，留着备用）
+    hilited_text_color: 0xFF006BB3      # #B36B00 输入框文字（高亮态，深琥珀）
+    hilited_back_color: 0xFFFFFFFF      # 白色输入框底，别用全透明，Weasel 会画成黑块
+    hilited_candidate_text_color: 0xFF0A83E8   # #E8830A 选中候选（橙）
+    hilited_candidate_back_color: 0x00C0E0FF   # #FFE0C0 选中底色（alpha 位填 00，Weasel 才画）
+    hilited_comment_text_color: 0xFF8A8A8A

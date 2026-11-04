@@ -1,0 +1,15 @@
+# 批处理与 PowerShell 必须是 CRLF，否则 cmd.exe 解析异常
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+*.ps1  text eol=crlf
+
+# YAML 由 Rime 解析，保持 LF
+*.yaml text eol=lf
+*.yml  text eol=lf
+*.lua  text eol=lf
+
+# 二进制
+*.ico  binary
+*.png  binary
+*.zip  binary
+*.exe  binary
