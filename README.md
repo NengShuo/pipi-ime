@@ -66,7 +66,7 @@ irm https://raw.githubusercontent.com/NengShuo/pipi-ime/main/install-online.ps1 
 
 **方式 B：下载压缩包**
 
-1. 下载本项目的 [Release](../../releases) 压缩包，解压
+1. 下载 [pipi-ime-v0.1.zip](https://github.com/NengShuo/pipi-ime/releases/download/v0.1/pipi-ime-v0.1.zip)，解压
 2. 双击 `install.bat`，UAC 点「是」
 3. 等它跑完（第一次编译约 10–30 秒，任务栏会闪一下）
 
