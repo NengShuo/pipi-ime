@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# 临时产物
+*.log
+*.tmp
+~$*
+
+# 调试截图（assets/preview-*.png 要保留）
+assets/_*.png
+_debug/
+
+# 自用的安装包缓存，体积大不进仓库
+setup/*.exe
+
+# Rime 编译产物与备份
+build/
+_pipi-backup-*/
+
+# 已废弃的组件，不入库
+_cancelled/
+
+# 调研时克隆的第三方源码（不是本项目代码，几十 MB）
+research/weasel/
+research/librime/
+research/librime-lua/
+
+# 系统垃圾
+Thumbs.db
+desktop.ini
+.DS_Store
