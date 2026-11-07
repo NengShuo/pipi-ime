@@ -280,6 +280,39 @@ local function get_input(ctx)
   return prop(ctx, "input") or ""
 end
 
+-- ------------------------------------------------------------
+-- 标点专用判断
+--
+-- 为什么单独拎出来：filter 对所有输入都会跑一遍，而标点不在拼音表里，
+-- 会被 looks_english 判成「英文」——于是半角原字符被插到候选第一位。
+-- 表现就是：中文模式下打逗号，第一候选是「,」，中文的「，」被挤到第二位。
+-- 所以标点必须在中英判断之前拦下来，走自己的分支。
+-- ------------------------------------------------------------
+
+-- 纯符号输入（只含 ASCII 标点/空白，不含字母数字）
+local function is_symbol(s)
+  return s ~= "" and #s <= 4 and s:match("^[%p%s]+$") ~= nil
+end
+
+-- 上一段上屏文字是不是英文
+-- 取结尾那段连续字母来判断：中文后面跟字母才算英文，
+-- 以中文结尾的一律按中文语境处理
+local function prev_is_english(ctx)
+  local h = prop(ctx, "commit_history")
+  if h == nil then
+    return false
+  end
+  local rec = prop(h, "back")
+  if rec == nil then
+    return false
+  end
+  local word = (rec.text or ""):match("([%a]+)%s*$")
+  if word == nil or #word < 2 then
+    return false
+  end
+  return looks_english(word)
+end
+
 function pipi_filter(input, env)
   local ctx = env.engine.context
   write_state(ctx)
@@ -292,7 +325,22 @@ function pipi_filter(input, env)
     return
   end
 
-  -- ① 像英文：原文就是第一候选（空格上屏它），中文跟在后面当备选
+  -- ① 标点：不进中英判断，只看上一段上屏的是中文还是英文
+  if is_symbol(s) then
+    if prev_is_english(ctx) then
+      -- 刚打完英文 → 半角符号直接上屏，中文标点不再出现
+      yield(Candidate("pipi_punct", 0, #s, s, ""))
+      return
+    end
+    -- 中文语境 → 原样放行。Rime 对常用标点只给一个中文候选，
+    -- 单候选会自动上屏，所以连候选窗都不会弹出来
+    for cand in input:iter() do
+      yield(cand)
+    end
+    return
+  end
+
+  -- ② 像英文：原文就是第一候选（空格上屏它），中文跟在后面当备选
   if looks_english(s) then
     yield(Candidate("pipi_raw", 0, #s, s, ""))
     for cand in input:iter() do
@@ -301,7 +349,7 @@ function pipi_filter(input, env)
     return
   end
 
-  -- ② 像拼音：中文原序不动，但「原样拼音」固定插在第 2 位
+  -- ③ 像拼音：中文原序不动，但「原样拼音」固定插在第 2 位
   local fallback = nil
   if #s >= 1 and #s <= 30 then
     fallback = Candidate("pipi_pinyin", 0, #s, s, "")
