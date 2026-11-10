@@ -178,6 +178,25 @@ local function is_pipi_key(kc)
       or kc == 0x20 or kc == 0xff08 or kc == 0xff0d or kc == 0xff1b
 end
 
+-- 当前高亮的是第几个候选（0 = 第一个；取不到就按 0 算）
+-- 为什么要它：空格上屏的必须是人眼看到高亮的那个候选，
+-- 用方向键挪过之后序号就不再是 0 了。
+local function picked_index(ctx)
+  local comp = prop(ctx, "composition")
+  if comp == nil then
+    return 0
+  end
+  local seg = comp:back()
+  if seg == nil then
+    return 0
+  end
+  local n = prop(seg, "selected_index")
+  if type(n) ~= "number" or n < 0 then
+    return 0
+  end
+  return n
+end
+
 function pipi_ascii(key, env)
   local ctx = env.engine.context
 
@@ -199,29 +218,36 @@ function pipi_ascii(key, env)
 
   -- 空格 / 回车：确认键，两种模式下行为一致
   -- 这是「不用切模式」的关键：像英文就出英文，像拼音就上屏中文
+  --
+  -- 关键修复：上屏的必须是「当前高亮的那一个」。
+  -- 旧版这里写死了 ctx:select(0)，用方向键挪到第 2、3 个候选再按空格，
+  -- 出来的永远是第一个。现在统一走 confirm_current_selection()：选谁上屏谁。
   if kc == 0x20 or kc == 0xff0d then
     if not ctx:is_composing() then
       return 2
     end
     local input = prop(ctx, "input") or ""
+
+    -- 已经用方向键挪过候选：直接确认高亮的那个，不再看中英判断
+    if picked_index(ctx) > 0 then
+      ctx:confirm_current_selection()
+      return 1
+    end
+
+    local suffix = (kc == 0x20) and " " or ""
+    -- 像英文：原文直接上屏（空格补在词尾，英文单词才连得起来）
     if looks_english(input) then
-      local suffix = (kc == 0x20) and " " or ""
       env.engine:commit_text(input .. suffix)
       ctx:clear()
       return 1
     end
-    -- 像拼音：中文模式下交给 Rime 原生逻辑上屏第一候选；
-    -- 英文模式下 Rime 原生会把原文打出去，所以这里必须自己选候选
-    if ascii_mode then
-      if ctx:has_menu() then
-        ctx:select(0)
-      else
-        env.engine:commit_text(input)
-        ctx:clear()
-      end
+    -- 像拼音：确认第 1 个中文候选；一个候选都没有时退回原文
+    if ctx:confirm_current_selection() then
       return 1
     end
-    return 2
+    env.engine:commit_text(input .. suffix)
+    ctx:clear()
+    return 1
   end
 
   -- 以下只处理英文（西文）模式。
